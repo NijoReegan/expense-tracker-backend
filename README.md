@@ -38,22 +38,22 @@ Secrets never leave the server.
 .\mvnw.cmd spring-boot:run
 ```
 
-The app starts on `http://localhost:8089`. Swagger/OpenAPI docs are at
-`http://localhost:8089/swagger-ui.html`, and the unauthenticated health probe at
-`http://localhost:8089/health`.
+The app starts on `http://localhost:8080`. Swagger/OpenAPI docs are at
+`http://localhost:8080/swagger-ui.html`, and the unauthenticated health probe at
+`http://localhost:8080/health`.
 
 ## Run as a Docker container
 
 ```powershell
 docker build -t et-server:local .
-docker run --rm -p 8089:8089 --env-file .env et-server:local
+docker run --rm -p 8080:8080 --env-file .env et-server:local
 ```
 
 Inside a container, `localhost` in `DB_URL` points at the container, not your
 host. When pointing the image at a database on the host machine, use:
 
 ```powershell
-docker run --rm -p 8089:8089 --env-file .env `
+docker run --rm -p 8080:8080 --env-file .env `
   -e "DB_URL=jdbc:postgresql://host.docker.internal:5432/expensetrackerdb" `
   et-server:local
 ```
@@ -112,7 +112,7 @@ EXPOSE_API_DOCS=false
 
 Notes:
 
-- `server.port` already reads `${PORT:8089}`, which is the variable Render injects.
+- `server.port` already reads `${PORT:8080}`, which is the variable Render injects.
 - `FRONTEND_URL` accepts a comma-separated list, and entries may be Spring origin
   patterns. Set `ALLOW_VERCEL_PREVIEWS=true` to also accept every
   `https://*.vercel.app` deployment (preview builds); keep it off for production.

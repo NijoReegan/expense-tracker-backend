@@ -52,9 +52,9 @@ COPY --from=build --chown=spring:spring /workspace/target/et-server-0.0.1-SNAPSH
 
 USER spring:spring
 
-# server.port already reads ${PORT:8089} in application.properties, and Render
+# server.port already reads ${PORT:8080} in application.properties, and Render
 # injects PORT, so the container follows whatever port Render assigns.
-EXPOSE 8089
+EXPOSE 8080
 
 # Spring Boot registers a shutdown hook, so Render's SIGTERM on deploy triggers
 # a graceful stop (see server.shutdown in application.properties).
@@ -62,7 +62,7 @@ STOPSIGNAL SIGTERM
 
 # curl already ships in eclipse-temurin:21-jre-jammy, so no apt layer is needed.
 HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
-    CMD ["/bin/sh", "-c", "curl -fsS http://127.0.0.1:${PORT:-8089}/health || exit 1"]
+    CMD ["/bin/sh", "-c", "curl -fsS http://127.0.0.1:${PORT:-8080}/health || exit 1"]
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 
