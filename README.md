@@ -21,7 +21,7 @@ CREATE DATABASE expensetrackerdb;
 
 ```
 DB_URL=jdbc:postgresql://localhost:5432/expensetrackerdb
-DB_USERNAME=postgres
+DB_USERNAME=your-username
 DB_PASSWORD=your-password
 DB_DDL_AUTO=update
 JWT_SECRET=replace-with-a-256-bit-random-secret
@@ -42,23 +42,61 @@ The app starts on `http://localhost:8089`. Swagger/OpenAPI docs are at
 `http://localhost:8089/swagger-ui.html`, and the unauthenticated health probe at
 `http://localhost:8089/health`.
 
+## Run as a Docker container
+
+```powershell
+docker build -t et-server:local .
+docker run --rm -p 8089:8089 --env-file .env et-server:local
+```
+
+Inside a container, `localhost` in `DB_URL` points at the container, not your
+host. When pointing the image at a database on the host machine, use:
+
+```powershell
+docker run --rm -p 8089:8089 --env-file .env `
+  -e "DB_URL=jdbc:postgresql://host.docker.internal:5432/expensetrackerdb" `
+  et-server:local
+```
+
+`Dockerfile` is a two-stage build:
+
+- **build** — `eclipse-temurin:21-jdk-jammy`, runs the Maven wrapper
+  (`./mvnw`, pinned to Maven 3.9.16) so the container build matches local and CI
+  builds. Dependencies are resolved in their own layer that only invalidates when
+  `pom.xml` changes.
+- **runtime** — `eclipse-temurin:21-jre-jammy`, carries only the fat jar. Runs as
+  an unprivileged user (uid 1001) and ships a `HEALTHCHECK` against `/health`.
+
+Details worth knowing:
+
+- `-DskipTests` is deliberate: `ExpenseTrackerApplicationTests.contextLoads` boots
+  the full Spring context, which needs `JWT_SECRET` and a reachable database,
+  neither of which exist during an image build. Run tests in CI against a real
+  database.
+- `.dockerignore` excludes `.env` and `target/`, so local credentials can never
+  end up in an image layer.
+- `JAVA_TOOL_OPTIONS` sets `-XX:MaxRAMPercentage=75.0` so the heap respects the
+  container memory limit instead of guessing from host memory.
+- `server.shutdown=graceful` makes Render's `SIGTERM` drain in-flight requests
+  instead of dropping them mid-response.
+- `Dockerfile.alpine` is a verified, equivalent musl-based variant (~410 MB
+  instead of ~530 MB) if you want the smaller image.
+
 ## Deploy to Render
 
 The repo root ships a `render.yaml` blueprint, so the backend can be created via
-**Render → New → Blueprint** pointing at this repository. If you configure the
-web service by hand instead:
+**Render → New → Blueprint** pointing at this repository. Render builds
+`et-server/Dockerfile`, so leave Build/Start commands empty.
 
-| Setting        | Value                                                     |
-| -------------- | --------------------------------------------------------- |
-| Root Directory | `et-server`                                               |
-| Runtime        | Java (21)                                                 |
-| Build Command  | `./mvnw -B clean package -DskipTests`                     |
-| Start Command  | `java -jar target/et-server-0.0.1-SNAPSHOT.jar`           |
-| Health Check   | `/health`                                                 |
+If you prefer Render's native Java runtime instead of Docker:
 
-`-DskipTests` matters: `ExpenseTrackerApplicationTests.contextLoads` boots the
-full Spring context, which requires `JWT_SECRET` and a reachable database. Run
-tests in CI against a real database instead of on the build machine.
+| Setting        | Value                                           |
+| -------------- | ----------------------------------------------- |
+| Root Directory | `et-server`                                     |
+| Runtime        | Java (21)                                       |
+| Build Command  | `./mvnw -B clean package -DskipTests`           |
+| Start Command  | `java -jar target/et-server-0.0.1-SNAPSHOT.jar` |
+| Health Check   | `/health`                                       |
 
 Required environment variables (set them on the service, never commit them):
 

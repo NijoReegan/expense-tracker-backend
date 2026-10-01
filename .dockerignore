@@ -1,0 +1,35 @@
+# Keep the build context small and, more importantly, keep local secrets out of
+# image layers. et-server/.env holds real DB and JWT credentials on a dev
+# machine and must never end up in an image published to a registry.
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Build output - the image builds from source, never from a stale local target/
+target/
+!.mvn/wrapper/maven-wrapper.properties
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+*.class
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Docs and CI config that the build does not need
+README.md
+HELP.md
+.github/
+Dockerfile
+.dockerignore
+
+# Nothing from the sibling frontend belongs in this context
+../ET-frontend/

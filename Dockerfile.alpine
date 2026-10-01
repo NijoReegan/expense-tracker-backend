@@ -1,0 +1,36 @@
+# syntax=docker/dockerfile:1
+
+# Experimental Alpine variant (smaller base, musl libc). Verified equivalent to
+# Dockerfile before swapping.
+
+FROM eclipse-temurin:21-jdk-alpine AS build
+
+WORKDIR /workspace
+
+COPY .mvn/ .mvn/
+COPY mvnw pom.xml ./
+RUN chmod +x mvnw && ./mvnw -B -ntp dependency:go-offline
+
+COPY src/ src/
+RUN ./mvnw -B -ntp clean package -DskipTests
+RUN test -f target/et-server-0.0.1-SNAPSHOT.jar
+
+FROM eclipse-temurin:21-jre-alpine AS runtime
+
+ENV TZ=UTC
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError -Dfile.encoding=UTF-8 -Duser.language=en -Duser.country=US -Djava.security.egd=file:/dev/./urandom"
+
+RUN addgroup -S -g 1001 spring \
+    && adduser -S -u 1001 -G spring -h /app -s /sbin/nologin spring
+
+WORKDIR /app
+COPY --from=build --chown=spring:spring /workspace/target/et-server-0.0.1-SNAPSHOT.jar app.jar
+
+USER spring:spring
+EXPOSE 8089
+STOPSIGNAL SIGTERM
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
+    CMD ["/bin/sh", "-c", "wget -q -O /dev/null http://127.0.0.1:${PORT:-8089}/health || exit 1"]
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
