@@ -1,4 +1,4 @@
-# Smart Expense Tracker — Backend (et-server)
+# Expense Tracker — Backend (et-server)
 
 Spring Boot 3.5 REST API backing the `ET-frontend` React app. Java 21, PostgreSQL,
 JWT auth.

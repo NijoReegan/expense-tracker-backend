@@ -50,7 +50,7 @@ public class AuthService {
         AppNotification welcome = new AppNotification();
         welcome.setUser(saved);
         welcome.setTitle("Welcome aboard");
-        welcome.setMessage("Your Smart Expense Tracker account is ready. Add your first transaction to get started.");
+        welcome.setMessage("Your Expense Tracker account is ready. Add your first transaction to get started.");
         welcome.setIcon("celebration");
         welcome.setIconBg("bg-primary/10 text-primary");
         welcome.setRead(false);
